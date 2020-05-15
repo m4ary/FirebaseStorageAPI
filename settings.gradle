@@ -1,0 +1,2 @@
+include ':app', ':firebasestorageapi'
+rootProject.name='FirebaseStorageAPI'
