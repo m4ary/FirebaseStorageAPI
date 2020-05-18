@@ -6,11 +6,11 @@ FirebaseStorageAPI is an Android Library wrapper for Firebase Storage functional
 
 ## Features
 - built-in Progress Dialog
--- customizable messages fit your need and language  
+  - customizable messages fit your need and language  
 - Upload and download files to Firebase Storage Bucket in different forms like:
- --  stream as an IntputStream
--- Array of Bytes
--- File on Device Storage
+  -  stream as an IntputStream
+  - Array of Bytes
+  - File on Device Storage
 - Delete files
 
 
@@ -74,17 +74,17 @@ child("sky.png");
 **A- Upload function**
 
 1- prepare the data as :
-- inputstream
+  - inputstream
 ~~~
  InputStream DataToUpload = ...;  
 ~~~
 
-- File
+  - File
 ~~~
  Uri DataToUpload = Uri.fromFile(new File("/sdcard/hello.txt"));
 ~~~
 
-- Bytes
+  - Bytes
 ~~~
   String string = "helloWorldInBytes";
   byte[] DataToUpload=string.getBytes();
@@ -104,7 +104,7 @@ child("sky.png");
 ~~~
 
 **B- Download function**
-- InputStream
+  - InputStream
 ~~~
 firebaseStorageAPI.downloadAsStream(mStorageRef, new OnCompleteListener<StreamDownloadTask.TaskSnapshot>() {  
     @Override  
@@ -118,7 +118,7 @@ firebaseStorageAPI.downloadAsStream(mStorageRef, new OnCompleteListener<StreamDo
 });
 ~~~
 
-- File
+  - File
 ~~~
 File localFile = File.createTempFile("images", "jpg");  
 firebaseStorageAPI.downloadToLocalPath(mStorageRef, localFile, new OnCompleteListener<FileDownloadTask.TaskSnapshot>() {  
@@ -130,7 +130,7 @@ firebaseStorageAPI.downloadToLocalPath(mStorageRef, localFile, new OnCompleteLis
          }
       });
 ~~~
--  Bytes
+  - Bytes
 ~~~
 firebaseStorageAPI.downloadAsBytes(mStorageRef, Long.MAX_VALUE, new OnCompleteListener<byte[]>({  
     @Override  
