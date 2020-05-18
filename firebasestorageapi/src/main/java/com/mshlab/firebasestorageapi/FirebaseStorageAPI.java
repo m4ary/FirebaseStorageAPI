@@ -1,19 +1,24 @@
 package com.mshlab.firebasestorageapi;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.net.Uri;
+import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FileDownloadTask;
+import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageException;
 import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.StreamDownloadTask;
 import com.google.firebase.storage.UploadTask;
 
@@ -32,34 +37,39 @@ public class FirebaseStorageAPI {
     private String completeMessage;
     private String errorMessage;
     private String uploadingMessage;
-    private ProgressDialog uploadDialog;
+    private AdvanceLoader advanceLoader;
     private boolean allowCancel;
+    private String loadingMessage;
+    private String cancelMeassge;
 
     private FirebaseStorageAPI(final Builder builder) {
         this.visibleAcitivty = builder.visibleAcitivty;
-        this.completeMessage = builder.completeMessage;
+        this.cancelMeassge = builder.cancelMeassge;
         this.errorMessage = builder.errorMessage;
-        this.uploadingMessage = builder.uploadingMeesage;
+        this.uploadingMessage = builder.uploadingMessage;
         this.downloadMessage = builder.downloadMessage;
-        this.uploadDialog = new ProgressDialog(builder.visibleAcitivty);
         this.allowCancel = builder.allowCancel;
+        this.loadingMessage = builder.loadingMessage;
+        this.advanceLoader = new AdvanceLoader(visibleAcitivty, loadingMessage);
     }
+
 
     public static class Builder {
         private Activity visibleAcitivty; //require
-        private String completeMessage = "upload completed successfully ";
+        private String cancelMeassge = "upload canceled";
         private String errorMessage = "error occurs while uploadingMessage the file";
-        private String uploadingMeesage = "uploading .. ";
+        private String uploadingMessage = "uploading .. ";
         private boolean allowCancel = true;
         private String downloadMessage = "downloading";
+        private String loadingMessage = "loading ..";
 
         public Builder setVisibleAcitivty(Activity visibleAcitivty) {
             this.visibleAcitivty = visibleAcitivty;
             return this;
         }
 
-        public Builder setCompleteMessage(String completeMessage) {
-            this.completeMessage = completeMessage;
+        public Builder setCancelMessage(String cancelMeassge) {
+            this.cancelMeassge = cancelMeassge;
             return this;
         }
 
@@ -73,8 +83,8 @@ public class FirebaseStorageAPI {
             return this;
         }
 
-        public Builder setuploadingMessage(String uploadingMeesage) {
-            this.uploadingMeesage = uploadingMeesage;
+        public Builder setUploadingMessage(String uploadingMeesage) {
+            this.uploadingMessage = uploadingMeesage;
             return this;
         }
 
@@ -83,16 +93,35 @@ public class FirebaseStorageAPI {
             return this;
         }
 
+        public Builder setLoadingMessage(String loadingMessage) {
+            this.loadingMessage = loadingMessage;
+            return this;
+        }
+
 
         public FirebaseStorageAPI build() {
-            return new FirebaseStorageAPI(this);
+            if (visibleAcitivty == null) {
+                throw new IllegalStateException("build FirebaseStorageAPI require passing visibleAcitivty");
+            } else {
+                return new FirebaseStorageAPI(this);
+            }
         }
     }
 
 
+    public void deleteFile(final StorageReference mStorageRef, OnCompleteListener<Void> onCompleteListener) {
+        advanceLoader.showSimple();
+        mStorageRef.delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                advanceLoader.hide();
+            }
+        }).addOnCompleteListener(onCompleteListener).addOnFailureListener(getFailureListener());
+
+    }
 
     public void downloadAsStream(final StorageReference mStorageRef, final OnCompleteListener<StreamDownloadTask.TaskSnapshot> onCompleteListener) {
-        showProgress(downloadMessage);
+        advanceLoader.showSimple();
 
         mStorageRef.getMetadata().addOnSuccessListener(new OnSuccessListener<StorageMetadata>() {
             @Override
@@ -103,16 +132,39 @@ public class FirebaseStorageAPI {
                     public void onProgress(@NonNull StreamDownloadTask.TaskSnapshot taskSnapshot) {
                         double progress = (100.0 * taskSnapshot.getBytesTransferred()) / storageMetadata.getSizeBytes();
                         String msgSize = Helper.formatSize(taskSnapshot.getBytesTransferred()) + " of " + Helper.formatSize(storageMetadata.getSizeBytes());
-                        updateProgress(progress, downloadMessage, msgSize);
+                        advanceLoader.updateProgress(progress, downloadMessage, msgSize);
                     }
                 });
             }
         }).addOnCompleteListener(new OnCompleteListener<StorageMetadata>() {
             @Override
             public void onComplete(@NonNull Task<StorageMetadata> task) {
-                hideProgress();
+                advanceLoader.hide();
             }
-        });
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+            }
+        }).addOnFailureListener(getFailureListener());
+
+
+    }
+
+    public void downloadAsBytes(final StorageReference mStorageRef, final long maxSizeByte, final OnCompleteListener<byte[]> onCompleteListener) {
+        advanceLoader.showSimple();
+        mStorageRef.getMetadata().addOnSuccessListener(new OnSuccessListener<StorageMetadata>() {
+            @Override
+            public void onSuccess(final StorageMetadata storageMetadata) {
+
+                mStorageRef.getBytes(maxSizeByte).addOnCompleteListener(onCompleteListener);
+            }
+        }).addOnCompleteListener(new OnCompleteListener<StorageMetadata>() {
+            @Override
+            public void onComplete(@NonNull Task<StorageMetadata> task) {
+                advanceLoader.hide();
+            }
+        }).addOnFailureListener(getFailureListener());
 
 
     }
@@ -120,7 +172,7 @@ public class FirebaseStorageAPI {
 
     //download
     public void downloadToLocalPath(final StorageReference mStorageRef, final File downloadFilePath, final OnCompleteListener<FileDownloadTask.TaskSnapshot> onCompleteListener) {
-        showProgress(downloadMessage);
+        advanceLoader.show();
 
         mStorageRef.getMetadata().addOnSuccessListener(new OnSuccessListener<StorageMetadata>() {
             @Override
@@ -131,16 +183,16 @@ public class FirebaseStorageAPI {
                     public void onProgress(@NonNull FileDownloadTask.TaskSnapshot taskSnapshot) {
                         double progress = (100.0 * taskSnapshot.getBytesTransferred()) / storageMetadata.getSizeBytes();
                         String msgSize = Helper.formatSize(taskSnapshot.getBytesTransferred()) + " of " + Helper.formatSize(storageMetadata.getSizeBytes());
-                        updateProgress(progress, downloadMessage, msgSize);
+                        advanceLoader.updateProgress(progress, downloadMessage, msgSize);
                     }
                 }).addOnCompleteListener(new OnCompleteListener<FileDownloadTask.TaskSnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<FileDownloadTask.TaskSnapshot> task) {
-                        hideProgress();
+                        advanceLoader.hide();
                     }
-                }).addOnCompleteListener(onCompleteListener);
+                }).addOnCompleteListener(onCompleteListener).addOnFailureListener(getFailureListener());
             }
-        });
+        }).addOnFailureListener(getFailureListener());
 
 
     }
@@ -186,32 +238,41 @@ public class FirebaseStorageAPI {
         }
 
         if (allowCancel) {
-            addCancelButtonProgress(new DialogInterface.OnClickListener() {
+            DialogInterface.OnClickListener onCancelClicked = new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
+                    Toast.makeText(visibleAcitivty, cancelMeassge, Toast.LENGTH_LONG).show();
                     if (!uploadTask.isComplete()) {
-                        //Upload is not complete yet, let's cancel
                         uploadTask.cancel();
-                    } else if (uploadTask.isSuccessful()) {
+                    } else {
                         //Upload is complete, but user wanted to cancel. Let's delete the file
-                        uploadTask.getSnapshot().getMetadata().getReference().delete();
+                        uploadTask.getSnapshot().getMetadata().getReference().delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                task.getException().printStackTrace();
+                            }
+                        });
                         // storageRef.delete(); // will delete all your files
                     }
                 }
-            });
-        }
 
-        showProgress(uploadingMessage);
+            };
+
+            advanceLoader.show(onCancelClicked);
+        } else {
+            advanceLoader.show();
+        }
 
 
         final long finalFileSize = fileSize;
         uploadTask.addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-                hideProgress();
+                advanceLoader.hide();
                 if (task.isSuccessful()) {
                     storageReference.getDownloadUrl().addOnCompleteListener(onCompleteListener);
                 } else {
+                    task.getException().printStackTrace();
                     uploadTask.addOnCompleteListener(onCompleteListener);
                 }
             }
@@ -221,45 +282,38 @@ public class FirebaseStorageAPI {
                 double progress = (100.0 * taskSnapshot.getBytesTransferred()) / finalFileSize;
                 String msgSize = Helper.formatSize(taskSnapshot.getBytesTransferred()) + " of " + Helper.formatSize(finalFileSize);
 
-                updateProgress(progress, uploadingMessage, msgSize);
+                advanceLoader.updateProgress(progress, uploadingMessage, msgSize);
             }
-        });
+        }).addOnFailureListener(getFailureListener());
 
 
     }
 
+    private OnFailureListener getFailureListener() {
+        return new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                advanceLoader.hide();
+                Toast.makeText(visibleAcitivty, errorMessage, Toast.LENGTH_LONG).show();
 
-    private void addCancelButtonProgress(DialogInterface.OnClickListener onClickListener) {
-        uploadDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "CANCEL", onClickListener);
+                e.printStackTrace();
+                int errorCode = ((StorageException) e).getErrorCode();
+                switch (errorCode) {
+                    case StorageException.ERROR_OBJECT_NOT_FOUND:
+                        Toast.makeText(visibleAcitivty, "file not exist", Toast.LENGTH_LONG).show();
+
+
+                    default:
+                        Toast.makeText(visibleAcitivty, errorMessage, Toast.LENGTH_LONG).show();
+
+
+                }
+            }
+        };
     }
 
-    public void updateProgress(double val, String title, String msg) {
-        uploadDialog.setTitle(title);
-        uploadDialog.setMessage(msg);
-        uploadDialog.setProgress((int) val);
-    }
-
-    public void showProgress(String str) {
-        try {
-            uploadDialog.setCancelable(false);
-            uploadDialog.setTitle("Please wait ...");
-            uploadDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            uploadDialog.setMax(100); // Progress Dialog Max Value
-            uploadDialog.setMessage(str);
-            if (uploadDialog.isShowing())
-                uploadDialog.dismiss();
-            uploadDialog.show();
-        } catch (Exception e) {
-
-        }
-    }
-
-    public void hideProgress() {
-        try {
-            if (uploadDialog.isShowing())
-                uploadDialog.dismiss();
-        } catch (Exception e) {
-
-        }
-    }
+    ;
 }
+
+
+

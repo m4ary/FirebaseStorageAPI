@@ -9,7 +9,8 @@
 
 # Java class files
 *.class
-
+.idea/*
+firebasestorageapi/.idea/gradle.xml
 # Generated files
 bin/
 gen/
@@ -90,3 +91,5 @@ lint/tmp/
 .idea/runConfigurations.xml
 .idea/misc.xml
 .idea/codeStyles/Project.xml
+firebasestorageapi/.idea/libraries/Gradle__androidx_annotation_annotation_1_0_0_jar.xml
+firebasestorageapi/.idea/gradle.xml

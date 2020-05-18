@@ -1,2 +1,2 @@
-include ':app', ':firebasestorageapi'
+include ':firebasestorageapi'
 rootProject.name='FirebaseStorageAPI'
