@@ -70,6 +70,7 @@ child("pics").
 child("sky.png");
 ~~~
 **A- Upload function**
+
 1- prepare the data as :
 - inputstream
 ~~~
