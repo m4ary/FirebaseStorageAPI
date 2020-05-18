@@ -2,7 +2,7 @@
 # FirebaseStorageAPI [![](https://jitpack.io/v/mshlab/FirebaseStorageAPI.svg)](https://jitpack.io/#mshlab/FirebaseStorageAPI)
 
 This is an Android Library is wrapper for Firebase Storage functionality.
-<img src="https://github.com/mshlab/FirebaseStorageAPI/readme/readme_demo.gif" alt="screenshot" width="220" align="right">
+<img src="https://github.com/mshlab/FirebaseStorageAPI/blob/master/README/readme_demo.gif?raw=true" alt="screenshot" width="220" align="right">
 
 ## Features
 - Upload and download files to Firebase Storage Bucket in different forms like:
