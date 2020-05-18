@@ -35,7 +35,7 @@ allprojects {
 ~~~
 dependencies {
 ...
-	implementation 'com.github.mshlab:FirebaseStorageAPI:v0.1-beta'
+	 implementation 'com.github.mshlab:FirebaseStorageAPI:v1.0-release'
 }
 
 ~~~
