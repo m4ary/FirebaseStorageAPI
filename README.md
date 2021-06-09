@@ -3,7 +3,7 @@
 
 
 FirebaseStorageAPI is an Android Library wrapper for Firebase Storage functionality.
-
+<img src="https://miro.medium.com/max/894/1*9oOH80Z7AQ9ata_8XjIIYw.gif" alt="screenshot" width="220" align="right">
 
 ## Features
 - built-in Progress Dialog
